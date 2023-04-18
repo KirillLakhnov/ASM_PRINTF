@@ -1,7 +1,7 @@
 section	.text
-    global _printf
+    global _myprintf
 	
-_printf:
+_myprintf:
 		pop r15 ; save return adress
 
 		push r9
@@ -103,14 +103,14 @@ print:
                     inc rsi
                     inc rdi
 
+					call cmp_size_buffer
                     jmp print_loop
 
 		bin_print:
-					mov rax, [rbp] ; rax = pointer to current parameter
-					mov rax, [rax] ; rax = current parameter
+					mov eax, [rbp] ; rax = current parameter
                     add rbp, 8 ; move to the next parameter
 
-					mov r11, 1b ; r11 = 1
+					mov r11, 1 ; r11 = 1
 					mov r12, 1
                     call hex_convert
 
@@ -119,8 +119,7 @@ print:
                     jmp print_loop
 
         chr_print:
-                    mov rdx, [rbp] ; rdx = pointer to current parameter
-                    mov dl,  [rdx] ; dl = current parameter
+                    mov rdx, [rbp] ; rdx = current parameter
                     add rbp, 8 ; move to the next parameter
 
                     mov byte [rsi], dl
@@ -131,8 +130,7 @@ print:
                     jmp print_loop
 
         dec_print:  
-                    mov rax, [rbp] ; rax = pointer to current parameter
-					mov rax, [rax] ; rax = current parameter
+                    mov eax, [rbp] ; rax = current parameter
                     add rbp, 8 ; move to the next parameter
 
 					mov r11, 10
@@ -143,8 +141,7 @@ print:
                     jmp print_loop
 
 		hex_print:
-					mov rax, [rbp] ; rax = pointer to current parameter
-					mov rax, [rax] ; rax = current parameter
+					mov eax, [rbp] ; rax = current parameter
                     add rbp, 8 ; move to the next parameter
 
 					mov r11, 1111b ; r11 = 16h
@@ -156,8 +153,7 @@ print:
                     jmp print_loop
 
 		oct_print:
-					mov rax, [rbp] ; rax = pointer to current parameter
-					mov rax, [rax] ; rax = current parameter
+					mov eax, [rbp] ; rax = current parameter
                     add rbp, 8 ; move to the next parameter
 
 					mov r11, 111b ; r11 = 8
@@ -169,11 +165,10 @@ print:
                     jmp print_loop
 
         str_print:
-					mov rax, [rbp] ; rax = pointer to current parameter
+					mov rax, [rbp] ; rax = current parameter
 					add rbp, 8 ; move to the next parameter
 
 					str_print_loop:
-
 							mov dl, [rax]
 
 							cmp dl, 0
@@ -198,7 +193,7 @@ print:
                     jmp print_loop
                     
         end_print:  
-					mov rax, 0x2000004
+					call print_buffer
         			mov rdi, 1
         			mov rsi, buffer
         			mov rdx, size_buff
@@ -215,9 +210,9 @@ print:
 ; checks the printf buffer for overflow, outputs its data in case of overflow and clears it
 ;===========================================
 ; Entry:    r9 = the number of characters written to the buffer
-; Exit:     if printf buffer for overflow, then r9 = 0
+; Exit:     if printf buffer for overflow, then r9 = 0, else r9 += 1
 ; Expects:  None
-; Destroys: rax, rdx
+; Destroys: None
 ;===========================================
 cmp_size_buffer:
 		inc r9
@@ -234,9 +229,11 @@ after_cmp_size:
 ; Entry:    None
 ; Exit:     None
 ; Expects:  None
-; Destroys: rax, rdx
+; Destroys: None
 ;===========================================
 print_buffer:
+		push rax
+		push rdx
 		push rdi
 
 		mov rax, 0x2000004
@@ -255,13 +252,14 @@ print_buffer:
 		mov rsi, buffer
 		xor r9, r9
 
-		xor rdx, rdx
 		pop rdi
+		pop rdx
+		pop rax
 		ret
 ;===========================================
 ; convert number of our system foundation in string and write to buffer
 ;===========================================
-; Entry:    rax = number
+; Entry:    eax = number
 ;			r11 = system foundation
 ;           rsi = pointer to buffer
 ; Exit:     rsi += the number of digits of a number in a given number system
@@ -277,7 +275,7 @@ dec_convert:
 		mov byte [rsi], dl   
     	inc rsi
 
-		;call cmp_size_buffer
+		call cmp_size_buffer
 
 dec_count:		
 		mov rbx, 0
@@ -288,7 +286,7 @@ dec_count:
     			push rdx ; rdx = one of the digits of a number in a given number system
     			inc rbx
    
-    			cmp rax, 0
+    			cmp eax, 0
     			jne deg
 
     	mov rcx, rbx ; rcx = the number of digits of a number in a given number system
@@ -308,29 +306,18 @@ dec_count:
 ; Destroys: rax, rbx, rcx, rdx, r12
 ;===========================================
 hex_convert:
-		call is_negative
-		cmp r13, 0
-		je hex_count
-
-		mov dl, '-'
-		mov byte [rsi], dl   
-    	inc rsi
-
-		call cmp_size_buffer
-
-hex_count:
 		mov rcx, r12
-		mov r12, 0
+		xor r12, r12
 
 		hex: 
     			mov rbx, rax
     			and rbx, r11
     			push rbx
 
-    			shr rax, cl
+    			shr eax, cl
     			inc r12
     
-    			cmp rax, 0
+    			cmp eax, 0
     			jne hex
 
     	mov rcx, r12
@@ -368,43 +355,43 @@ print_number:
 ;===========================================
 ; checking a number for negativity
 ;===========================================
-; Entry:    rax = number
+; Entry:    eax = number
 ; Exit:     r13 = 1 if number < 0; r13 = 0 if number >= 0
-;			rax = | rax |
+;			eax = |eax|
 ; Expects:  None
-; Destroys: r14
+; Destroys: None
 ;===========================================
 is_negative:
 		push rax
+	 	push rdx
 
-		mov r14, 8000000000000000h
-
-		and r14, rax
-		cmp r14, 8000000000000000h
-		je  not_neg
-		jmp yes_neg
+		cmp eax, 0
+		jl  yes_neg
+		jmp not_neg
 
 		not_neg:
 				mov r13, 0
+				pop rdx
 				pop rax
 				ret
 
 		yes_neg:
 				mov r13, 1
+				pop rdx
 				pop rax
-				sub rax, 1
-				not rax
+				sub eax, 1
+				not eax
 				ret
 ;===========================================
 
 section .data
 
-size_buff   equ 100
+size_buff   equ 250
 buffer      db size_buff dup (0)
 
 system db '0123456789ABCDEF$'
 
-jump_table dq Spec_a
+jump_table  dq Spec_a
         	dq Spec_b
         	dq Spec_c
         	dq Spec_d

@@ -1,6 +1,6 @@
 section .text
     global _main
-    extern _printf
+    extern _myprintf
 
 _main:  mov rdi, msg
 
@@ -15,7 +15,7 @@ _main:  mov rdi, msg
         mov rdx, par2
 		mov rsi, par1
 
-        call _printf
+        call _myprintf
 
         mov rax, 0x2000001  ;<--; exit programm
         xor rdi, rdi        ;
