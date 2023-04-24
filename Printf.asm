@@ -68,34 +68,7 @@ print:
                     je percent_print
 
 					mov r14, jump_table
-                    mov r8, qword [r14 + 8 * (rdx - 97)] ; 'a' = 97
-
-                    jmp r8  ; go to jmp table
-
-        Spec_a: jmp skip_char
-        Spec_b: jmp bin_print
-        Spec_c: jmp chr_print
-        Spec_d: jmp dec_print
-        Spec_e: jmp skip_char
-        Spec_f: jmp skip_char
-        Spec_g: jmp skip_char
-        Spec_h: jmp skip_char
-        Spec_i: jmp skip_char
-        Spec_j: jmp skip_char
-        Spec_k: jmp skip_char
-        Spec_l: jmp skip_char
-        Spec_m: jmp skip_char
-        Spec_n: jmp skip_char
-        Spec_o: jmp oct_print
-        Spec_p: jmp skip_char
-        Spec_q: jmp skip_char
-        Spec_r: jmp skip_char
-        Spec_s: jmp str_print
-        Spec_t: jmp skip_char
-        Spec_u: jmp skip_char
-        Spec_v: jmp skip_char
-        Spec_w: jmp skip_char
-        Spec_x: jmp hex_print
+                    jmp qword [r14 + 8 * (rdx - 'a')]  ; go to jmp table
       
         percent_print: 
                     mov dl, '%'
@@ -391,27 +364,13 @@ buffer      db size_buff dup (0)
 
 system db '0123456789ABCDEF$'
 
-jump_table  dq Spec_a
-        	dq Spec_b
-        	dq Spec_c
-        	dq Spec_d
-       		dq Spec_e
-        	dq Spec_f
-        	dq Spec_g
-        	dq Spec_h
-        	dq Spec_i
-        	dq Spec_j
-        	dq Spec_k
-        	dq Spec_l
-        	dq Spec_m
-        	dq Spec_n
-        	dq Spec_o
-        	dq Spec_p
-        	dq Spec_q
-        	dq Spec_r
-        	dq Spec_s
-        	dq Spec_t
-        	dq Spec_u
-        	dq Spec_v
-        	dq Spec_w
-        	dq Spec_x
+jump_table 	dq skip_char ; specifier a
+         	dq bin_print ; specifier b
+         	dq chr_print ; specifier c
+         	dq dec_print ; specifier d
+         	dq 'n' - 'e' + 1 dup (chr_print)
+         	dq oct_print ; specifier o
+         	dq 'r' - 'p' + 1 dup (chr_print)
+         	dq str_print ; specifier s
+         	dq 'w' - 't' + 1 dup (chr_print)
+         	dq hex_print ; specifier x
